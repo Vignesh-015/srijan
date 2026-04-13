@@ -3,9 +3,10 @@
     style.innerHTML = `
         #cara-chatbot-container {
             position: fixed;
-            bottom: 90px;
+            bottom: 95px;
             right: 20px;
             width: 350px;
+            max-height: calc(100vh - 120px);
             height: 500px;
             background: #fff;
             border-radius: 12px;
@@ -107,7 +108,7 @@
         }
         #cara-chatbot-launcher {
             position: fixed;
-            bottom: 90px;
+            bottom: 25px;
             right: 20px;
             width: 60px;
             height: 60px;
