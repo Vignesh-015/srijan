@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Account - E-Commerce Website</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .account-container { display: flex; flex-wrap: wrap; gap: 30px; padding: 40px; }
+    .auth-section, .profile-section { flex: 1; min-width: 300px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9; }
+    .auth-section input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; }
+    .orders-history { flex: 2; min-width: 400px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+    .order-card { border: 1px solid #e3e6f3; padding: 15px; margin-bottom: 15px; border-radius: 5px; background: #fff; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <section id="header">
+    <a href="#"><img src="img/logo.png" alt="" class="logo"></a>
+    <div>
+      <ul id="navbar">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="shop.html">Shop</a></li>
+        <li id="lg-bag"><a href="cart.html"><i class="bi-solid bi-bag"></i></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="account-container">
+    <div id="auth-panel" class="auth-section">
+      <h3>Login or Create Account</h3>
+      <p style="margin-bottom:15px; font-size:14px;">Securely manage your Amazon-like profile.</p>
+      <input type="text" id="auth-name" placeholder="Full Name (for signup)">
+      <input type="email" id="auth-email" placeholder="Email Address">
+      <input type="password" id="auth-password" placeholder="Password">
+      <button class="normal" onclick="handleAuth()">Login / Sign Up</button>
+      
+      <div style="margin: 20px 0; display:flex; align-items:center;">
+        <hr style="flex:1; border:none; border-top:1px solid #ddd;">
+        <span style="padding:0 10px; color:#888; font-size:12px;">OR</span>
+        <hr style="flex:1; border:none; border-top:1px solid #ddd;">
+      </div>
+      
+      <button class="normal" style="background-color: #fff; color: #333; border: 1px solid #ccc; width: 100%; margin-bottom: 15px; display:flex; align-items:center; justify-content:center; gap:10px;" onclick="handleGoogleAuth()">
+        <i class="bi bi-google" style="color:#DB4437; font-size:18px;"></i> Continue with Google
+      </button>
+
+      <button class="normal" style="background-color: #1877f2; color: white; width: 100%; display:flex; align-items:center; justify-content:center; gap:10px;" onclick="handleFacebookAuth()">
+        <i class="bi bi-facebook" style="font-size:18px;"></i> Continue with Facebook
+      </button>
+
+      <p style="margin-top:20px; font-size:12px; color:#555;">If email not found, a new account will be created automatically.</p>
+    </div>
+
+    <div id="profile-panel" class="profile-section hidden">
+      <h3>My Profile</h3>
+      <p><strong id="prof-name"></strong></p>
+      <p id="prof-email"></p>
+      <button class="normal" style="background-color: #ffcccc; color: #a00; margin-top:20px;" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="orders-panel" class="orders-history hidden">
+      <h3>Your Orders</h3>
+      <div id="orders-container"></div>
+    </div>
+  </section>
+
+  <footer class="section-p1">
+    <div class="copyright"><p>© 2025, Cara - E-Commerce Webiste</p></div>
+  </footer>
+
+  <script src="products.js"></script>
+  <script src="script.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script src="amazon.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+    });
+
+    function checkAuth() {
+      const currentUser = JSON.parse(localStorage.getItem('current_user'));
+      if(currentUser) {
+        document.getElementById('auth-panel').classList.add('hidden');
+        document.getElementById('profile-panel').classList.remove('hidden');
+        document.getElementById('orders-panel').classList.remove('hidden');
+        
+        document.getElementById('prof-name').innerText = currentUser.name;
+        document.getElementById('prof-email').innerText = currentUser.email;
+        loadOrders(currentUser.email);
+      } else {
+        document.getElementById('auth-panel').classList.remove('hidden');
+        document.getElementById('profile-panel').classList.add('hidden');
+        document.getElementById('orders-panel').classList.add('hidden');
+      }
+    }
+
+    function handleAuth() {
+      const name = document.getElementById('auth-name').value;
+      const email = document.getElementById('auth-email').value;
+      const pass = document.getElementById('auth-password').value;
+
+      if(!email || !pass) {
+        if(typeof showToast === 'function') showToast('Email and Password required');
+        return;
+      }
+
+      firebase.auth().signInWithEmailAndPassword(email, pass)
+        .then((userCredential) => {
+            let user = {
+                email: userCredential.user.email,
+                name: userCredential.user.displayName || email.split('@')[0],
+                uid: userCredential.user.uid
+            };
+            localStorage.setItem('current_user', JSON.stringify(user));
+            checkAuth();
+            if(typeof showToast === 'function') showToast('Logged In Successfully');
+        })
+        .catch(function(error) {
+            // Assume invalid-credential means either wrong password or new user
+            if (!name) {
+                if (typeof showToast === 'function') showToast('Full name required for new account, or Invalid Credentials for existing.');
+                return;
+            }
+            firebase.auth().createUserWithEmailAndPassword(email, pass)
+              .then((userCredential) => {
+                  return userCredential.user.updateProfile({
+                      displayName: name
+                  }).then(() => {
+                      let newUser = {
+                          email: userCredential.user.email,
+                          name: name,
+                          uid: userCredential.user.uid
+                      };
+                      localStorage.setItem('current_user', JSON.stringify(newUser));
+                      checkAuth();
+                      if(typeof showToast === 'function') showToast('Account Created Successfully');
+                  });
+              })
+              .catch((err) => {
+                  if (err.code === 'auth/email-already-in-use') {
+                      if(typeof showToast === 'function') showToast('Incorrect Password / Invalid Credentials');
+                  } else {
+                      if(typeof showToast === 'function') showToast(err.message);
+                  }
+              });
+        });
+    }
+
+    function handleGoogleAuth() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            let user = {
+                email: result.user.email,
+                name: result.user.displayName,
+                uid: result.user.uid
+            };
+            localStorage.setItem('current_user', JSON.stringify(user));
+            checkAuth();
+            if(typeof showToast === 'function') showToast('Google Login Successful!');
+        }).catch((err) => {
+            if(typeof showToast === 'function') showToast(err.message);
+        });
+    }
+
+    function handleFacebookAuth() {
+        const provider = new firebase.auth.FacebookAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            let user = {
+                email: result.user.email,
+                name: result.user.displayName,
+                uid: result.user.uid
+            };
+            localStorage.setItem('current_user', JSON.stringify(user));
+            checkAuth();
+            if(typeof showToast === 'function') showToast('Facebook Login Successful!');
+        }).catch((err) => {
+            if(typeof showToast === 'function') showToast(err.message);
+        });
+    }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+          localStorage.removeItem('current_user');
+          checkAuth();
+          if(typeof showToast === 'function') showToast('Logged Out');
+      }).catch((error) => {
+          if(typeof showToast === 'function') showToast('Error logging out: ' + error.message);
+      });
+    }
+
+    function loadOrders(email) {
+      const container = document.getElementById('orders-container');
+      const db = firebase.database();
+      const userEmailEscaped = email.replace(/[.#$\\[\\]]/g, '_');
+
+      db.ref('orders').orderByChild('user').equalTo(userEmailEscaped).once('value').then(snap => {
+        let ordersMap = snap.val();
+        if(!ordersMap) {
+          container.innerHTML = '<p>No orders found.</p>';
+          return;
+        }
+
+        let userOrders = Object.values(ordersMap);
+        let html = '';
+        userOrders.forEach(o => {
+          let itemsHtml = '';
+          for(let key in o.items) {
+            itemsHtml += `<p style="font-size:13px; margin:2px 0;">${o.items[key].quantity}x ${o.items[key].name}</p>`;
+          }
+
+          html += `
+            <div class="order-card">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;">
+                <div><strong>Order # ${o.orderId}</strong><br><span style="font-size:12px; color:#555;">${new Date(o.date).toLocaleDateString()}</span></div>
+                <div style="text-align:right;"><strong>Total: ₹${o.total.toFixed(2)}</strong><br><span style="font-size:12px; color:#f08804; font-weight:bold;"><div style="display:flex; gap:5px; margin-top:5px; margin-bottom:5px;">
+            <div style="height:5px; flex:1; background:${o.status==='Delivered'?'#088178':'#088178'}"></div>
+            <div style="height:5px; flex:1; background:${o.status==='Delivered'?'#088178':'#eee'}"></div>
+            <div style="height:5px; flex:1; background:${o.status==='Delivered'?'#088178':'#eee'}"></div>
+        </div>${o.status || 'Processing'}</span></div>
+              </div>
+              <div>
+                ${itemsHtml}
+              </div>
+              <div style="margin-top:10px;">
+                <button class="normal" style="padding: 5px 15px; font-size:12px; background-color:#e3e6f3;" onclick="window.location.href='order.html?id=${o.orderId}'">Track / Details</button>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      });
+    }
+  </script>
+</body>
+</html>

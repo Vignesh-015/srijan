@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Success</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; height:100vh; background-color:#f8f9fa; margin:0;">
+  
+  <div style="background:white; padding: 50px 80px; text-align:center; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+    <img src="img/logo.png" alt="Cara" style="margin-bottom:30px;">
+    <h1 style="color: #088178; margin-bottom: 10px;">Order Placed Successfully!</h1>
+    <p style="color: #666; font-size: 16px; margin-bottom: 30px;">Thank you for shopping with us. Your delivery is being prioritized.</p>
+    <p style="font-size: 14px; font-weight: 600;">Redirecting to Home in <span id="countdown">5</span> seconds...</p>
+    <br>
+    <button class="normal" onclick="window.location.href='index.html'" style="margin-top: 20px;">Return Home Now</button>
+  </div>
+
+  <script>
+    let count = 5;
+    setInterval(() => {
+      count--;
+      document.getElementById('countdown').innerText = count;
+      if(count <= 0) window.location.href = 'index.html';
+    }, 1000);
+  </script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script src="amazon.js"></script>
+</body>
+</html>

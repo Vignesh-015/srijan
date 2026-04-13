@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Order - E-Commerce Website</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .order-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; background: #fff; border-radius: 8px; }
+    .tracking-steps { display: flex; justify-content: space-between; margin-top: 30px; position: relative; }
+    .tracking-steps::before { content: ''; position: absolute; top: 15px; left: 10%; right: 10%; height: 4px; background: #eee; z-index: 1; }
+    .step { text-align: center; position: relative; z-index: 2; width: 25%; }
+    .step .icon { width: 34px; height: 34px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; color: #999; font-weight: bold; border: 2px solid #fff; }
+    .step.active .icon { background: #088178; color: #fff; }
+    .step.active ~ .step .icon { background: #eee; color: #999; }
+    .step h5 { font-size: 12px; margin: 0; color: #555; }
+    .step.active h5 { color: #000; font-weight: bold; }
+  </style>
+</head>
+<body style="background: #f5f5f5;">
+  <section id="header">
+    <a href="#"><img src="img/logo.png" alt="" class="logo"></a>
+    <div>
+      <ul id="navbar">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="shop.html">Shop</a></li>
+        <li id="lg-bag"><a href="cart.html"><i class="bi-solid bi-bag"></i></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section-p1">
+    <div class="order-container" id="order-details">
+      <!-- Injected -->>
+    </div>
+  </section>
+
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script src="amazon.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('id');
+      const container = document.getElementById('order-details');
+      
+      if(!orderId) {
+        container.innerHTML = '<h3>Invalid Order Request</h3>';
+        return;
+      }
+
+      const db = firebase.database();
+      db.ref('orders/' + orderId).once('value').then(snap => {
+        let order = snap.val();
+
+        if(!order) {
+          container.innerHTML = '<h3>Order Not Found</h3>';
+          return;
+        }
+
+        let itemsHtml = '';
+        for(let key in order.items) {
+            itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
+              <span>${order.items[key].quantity}x ${order.items[key].name}</span>
+              <span>₹${(order.items[key].price * order.items[key].quantity).toFixed(2)}</span>
+            </div>`;
+        }
+
+        let isShipped = order.status === 'Shipped' || order.status === 'Delivered';
+        let isDelivered = order.status === 'Delivered';
+
+        container.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h2>Order Tracking</h2>
+              <button class="normal" style="background: #e3e6f3;" onclick="window.history.back()">Back</button>
+          </div>
+          <p style="color:#555;">Order ID: <strong>${order.orderId}</strong> &nbsp;|&nbsp; Placed On: <strong>${new Date(order.date).toLocaleDateString()}</strong></p>
+          
+          <div class="tracking-steps">
+            <div class="step active">
+              <div class="icon"><i class="bi bi-check"></i></div>
+              <h5>Processing</h5>
+            </div>
+            <div class="step ${isShipped ? 'active' : ''}">
+              <div class="icon"><i class="bi bi-box-seam"></i></div>
+              <h5>Shipped</h5>
+            </div>
+            <div class="step ${isShipped ? 'active' : ''}">
+              <div class="icon"><i class="bi bi-truck"></i></div>
+              <h5>Out for Delivery</h5>
+            </div>
+            <div class="step ${isDelivered ? 'active' : ''}">
+              <div class="icon"><i class="bi bi-house-door"></i></div>
+              <h5>Delivered</h5>
+            </div>
+          </div>
+
+          <div style="margin-top: 40px; background: #fafafa; padding: 20px; border-radius: 5px; border: 1px solid #e1e1e1;">
+              <h4>Items</h4>
+              ${itemsHtml}
+              <h3 style="text-align:right; margin-top:20px; color:#088178;">Grand Total: ₹${order.total.toFixed(2)}</h3>
+          </div>
+
+          <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+              ${(order.status !== 'Cancelled' && !isShipped) ? `<button class="normal" style="background:#ffcccc; color:#a00; border:none;" onclick="cancelOrder('${order.orderId}')">Cancel pending order</button>` : `<span style="color:#a00; font-weight:bold;">${order.status === 'Cancelled' ? 'Order Cancelled' : ''}</span>`}
+          </div>
+        `;
+      });
+    });
+
+    window.cancelOrder = function(id) {
+       const db = firebase.database();
+       db.ref('orders/' + id).update({ status: 'Cancelled' }).then(() => {
+           alert('Order has been cancelled.');
+           location.reload();
+       });
+    }
+  </script>
+</body>
+</html>
