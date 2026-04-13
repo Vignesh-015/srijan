@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const Razorpay = require('razorpay');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
@@ -14,8 +15,8 @@ app.use(express.static(path.join(__dirname, '.')));
 
 // Initialize Razorpay Instance securely
 const razorpay = new Razorpay({
-  key_id: 'rzp_live_SOexkv1hAx5mJG',
-  key_secret: '8ueN9x1ot6Y1VxRagwQHaOgi'
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
 // API endpoint to create a secure order ID 
@@ -42,6 +43,11 @@ app.post('/api/create-order', async (req, res) => {
     console.error("Razorpay API Error:", error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Endpoint to securely supply Public Key to frontend
+app.get('/api/config', (req, res) => {
+  res.json({ razorpayKeyId: process.env.RAZORPAY_KEY_ID });
 });
 
 // Start the core backend engine

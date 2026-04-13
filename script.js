@@ -472,10 +472,14 @@ if(checkoutItemsEl) {
           }
 
           const order = await response.json();
+          
+          // Securely fetch public key config
+          const configRes = await fetch('/api/config');
+          const config = await configRes.json();
 
           // 2. Safely initialize Razorpay overlay
           const options = {
-            "key": "rzp_live_SOexkv1hAx5mJG", // Frontend purely uses Key ID!
+            "key": config.razorpayKeyId, // Frontend receives it securely from backend
             "amount": order.amount,
             "currency": order.currency,
             "order_id": order.id, // Successfully generated server-side Order ID injected!
