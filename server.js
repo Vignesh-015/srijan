@@ -50,8 +50,13 @@ app.get('/api/config', (req, res) => {
   res.json({ razorpayKeyId: process.env.RAZORPAY_KEY_ID });
 });
 
-// Start the core backend engine
-app.listen(PORT, () => {
-  console.log(`Backend Server Engine natively running on http://localhost:${PORT}`);
-  console.log(`Please go strictly to => http://localhost:${PORT}/index.html in your browser!`);
-});
+// Start the core backend engine locally
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Backend Server Engine natively running on http://localhost:${PORT}`);
+    console.log(`Please go strictly to => http://localhost:${PORT}/index.html in your browser!`);
+  });
+}
+
+// Export for serverless environments (like Vercel)
+module.exports = app;
