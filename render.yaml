@@ -3,7 +3,7 @@ services:
     name: e-commercedummy1
     env: node
     buildCommand: npm install
-    startCommand: node server.js
+    startCommand: node backend.js
     envVars:
       - key: RAZORPAY_KEY_ID
         sync: false
