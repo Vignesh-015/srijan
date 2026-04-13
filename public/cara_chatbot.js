@@ -202,7 +202,7 @@
         sendBtn.disabled = true;
 
         try {
-            const res = await fetch('http://localhost:8000/api/tickets/analyze', {
+            const res = await fetch('https://srijan-chatbot-ai.onrender.com/api/tickets/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text, urgency: "Medium" })
