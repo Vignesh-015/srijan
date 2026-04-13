@@ -20,54 +20,107 @@
       table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
       th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
       th { background-color: #fbfbfb; color: #555; }
+      .badge { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+      .badge-success { background: #e8f6ea; color: #088178; }
+      .badge-warning { background: #fff8e1; color: #fbc02d; }
+      .badge-danger { background: #fdeaea; color: #c62828; }
+      .btn-resolve { background: #088178; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+      .btn-resolve:hover { background: #066b63; }
+      #view-ai { display: none; }
   </style>
 </head>
 <body>
   
   <div class="sidebar">
       <h2>Cara Admin Dashboard</h2>
-      <a href="#" class="active"><i class="bi bi-graph-up"></i> Overview</a>
-      <a href="#"><i class="bi bi-box"></i> Inventory</a>
-      <a href="#"><i class="bi bi-cart-check"></i> Orders</a>
+      <a href="#" id="tab-overview" class="active" onclick="switchTab('overview')"><i class="bi bi-graph-up"></i> Overview</a>
+      <a href="#" id="tab-inventory"><i class="bi bi-box"></i> Inventory</a>
+      <a href="#" id="tab-orders"><i class="bi bi-cart-check"></i> Orders</a>
+      <a href="#" id="tab-ai" onclick="switchTab('ai')"><i class="bi bi-robot"></i> AI Support</a>
       <a href="#" onclick="logoutBtn()"><i class="bi bi-box-arrow-right"></i> Secure Logout</a>
   </div>
 
   <div class="main-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-          <h2>Dashboard</h2>
-          <button class="normal" style="background-color:#088178; color:white;">Generate Report</button>
+      <!-- OVERVIEW VIEW -->
+      <div id="view-overview">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+              <h2>Dashboard Overview</h2>
+              <button class="normal" style="background-color:#088178; color:white;">Generate Report</button>
+          </div>
+
+          <div class="card-grid">
+              <div class="card">
+                  <h3>TOTAL REVENUE</h3>
+                  <h1 id="metric-rev">₹0.00</h1>
+              </div>
+              <div class="card">
+                  <h3>PENDING ORDERS</h3>
+                  <h1 id="metric-orders">0</h1>
+              </div>
+              <div class="card">
+                  <h3>SYSTEM STATUS</h3>
+                  <h1 style="color:#088178;">Online</h1>
+              </div>
+          </div>
+
+          <h3 style="margin-bottom:15px;">Recent Transactions</h3>
+          <table>
+              <thead>
+                  <tr>
+                      <th>Order ID</th>
+                      <th>Customer Email</th>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                  </tr>
+              </thead>
+              <tbody id="orders-table">
+                  <tr><td colspan="5" style="text-align:center;">Loading orders from Firebase...</td></tr>
+              </tbody>
+          </table>
       </div>
 
-      <div class="card-grid">
-          <div class="card">
-              <h3>TOTAL REVENUE</h3>
-              <h1 id="metric-rev">₹0.00</h1>
+      <!-- AI SUPPORT VIEW -->
+      <div id="view-ai">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+              <h2>AI Ticket Management</h2>
+              <div>
+                <button class="normal" onclick="seedAIDemo()" style="background-color:#041e42; color:white;">Seed Demo Data</button>
+                <button class="normal" onclick="loadAITickets()" style="background-color:#088178; color:white;">Refresh</button>
+              </div>
           </div>
-          <div class="card">
-              <h3>PENDING ORDERS</h3>
-              <h1 id="metric-orders">0</h1>
-          </div>
-          <div class="card">
-              <h3>SYSTEM STATUS</h3>
-              <h1 style="color:#088178;">Online</h1>
-          </div>
-      </div>
 
-      <h3 style="margin-bottom:15px;">Recent Transactions</h3>
-      <table>
-          <thead>
-              <tr>
-                  <th>Order ID</th>
-                  <th>Customer Email</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-              </tr>
-          </thead>
-          <tbody id="orders-table">
-              <tr><td colspan="5" style="text-align:center;">Loading orders from Firebase...</td></tr>
-          </tbody>
-      </table>
+          <div class="card-grid">
+              <div class="card">
+                  <h3>TOTAL TICKETS</h3>
+                  <h1 id="ai-total">0</h1>
+              </div>
+              <div class="card">
+                  <h3>REQUIRES HUMAN</h3>
+                  <h1 id="ai-pending" style="color:#c62828;">0</h1>
+              </div>
+              <div class="card">
+                  <h3>AI ACCURACY</h3>
+                  <h1 id="ai-accuracy">0%</h1>
+              </div>
+          </div>
+
+          <h3 style="margin-bottom:15px;">Support Conversations</h3>
+          <table>
+              <thead>
+                  <tr>
+                      <th>Ticket</th>
+                      <th>Category</th>
+                      <th>Confidence</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                  </tr>
+              </thead>
+              <tbody id="ai-table">
+                  <tr><td colspan="5" style="text-align:center;">Fetching tickets from AI Backend...</td></tr>
+              </tbody>
+          </table>
+      </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -77,6 +130,101 @@
   <!-- Reuse amazon.js to initialize firebase -->
   <script src="amazon.js"></script>
   <script>
+      const AI_BACKEND = "https://srijan-chatbot-ai.onrender.com";
+
+      function switchTab(tab) {
+          document.getElementById('view-overview').style.display = tab === 'overview' ? 'block' : 'none';
+          document.getElementById('view-ai').style.display = tab === 'ai' ? 'block' : 'none';
+          
+          document.getElementById('tab-overview').classList.toggle('active', tab === 'overview');
+          document.getElementById('tab-ai').classList.toggle('active', tab === 'ai');
+
+          if (tab === 'ai') loadAITickets();
+      }
+
+      async function loadAITickets() {
+          const tbody = document.getElementById('ai-table');
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Fetching live tickets...</td></tr>';
+
+          try {
+              const res = await fetch(`${AI_BACKEND}/api/tickets`);
+              const data = await res.json();
+              const tickets = data.tickets || [];
+              const stats = data.stats || {};
+
+              document.getElementById('ai-total').innerText = stats.total_tickets || 0;
+              document.getElementById('ai-pending').innerText = stats.hitl_required || 0;
+              
+              const accuracy = stats.total_tickets > 0 
+                ? Math.round((stats.auto_resolved / stats.total_tickets) * 100) 
+                : 0;
+              document.getElementById('ai-accuracy').innerText = accuracy + '%';
+
+              if (tickets.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No tickets found.</td></tr>';
+                  return;
+              }
+
+              let html = '';
+              tickets.forEach(t => {
+                  const statusClass = t.requires_human ? 'badge-danger' : 'badge-success';
+                  const statusText = t.requires_human ? 'Requires Human' : 'Auto Resolved';
+                  
+                  html += `
+                      <tr>
+                          <td>
+                            <div style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                              <strong>#${t.ticket_id}</strong>: ${t.text}
+                            </div>
+                          </td>
+                          <td><span class="badge badge-warning">${t.classification}</span></td>
+                          <td>${(t.confidence * 100).toFixed(0)}%</td>
+                          <td><span class="badge ${statusClass}">${statusText}</span></td>
+                          <td>
+                              ${t.requires_human 
+                                ? `<button class="btn-resolve" onclick="resolveTicket(${t.ticket_id}, '${t.text.replace(/'/g, "\\'")}')">Resolve</button>` 
+                                : '—'}
+                          </td>
+                      </tr>
+                  `;
+              });
+              tbody.innerHTML = html;
+          } catch (err) {
+              tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to connect to AI Backend.</td></tr>';
+          }
+      }
+
+      async function resolveTicket(id, userQuery) {
+          const solution = prompt(`REOVEL TICKET #${id}\n\nUser asked: "${userQuery}"\n\nEnter the correct resolution for the AI to learn:`);
+          if (!solution) return;
+
+          try {
+              const res = await fetch(`${AI_BACKEND}/api/tickets/${id}/hitl-resolve`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ step_by_step_resolution: solution })
+              });
+              if (res.ok) {
+                  alert("Ticket resolved! The AI has been trained with this solution.");
+                  loadAITickets();
+              } else {
+                  alert("Failed to resolve ticket.");
+              }
+          } catch (err) {
+              alert("Server error connecting to AI.");
+          }
+      }
+
+      async function seedAIDemo() {
+          if (!confirm("This will clear existing tickets and generate 20 test tickets. Continue?")) return;
+          try {
+              await fetch(`${AI_BACKEND}/api/demo/seed`, { method: 'POST' });
+              loadAITickets();
+          } catch (err) {
+              alert("Failed to seed demo.");
+          }
+      }
+
       function logoutBtn() {
           firebase.auth().signOut().then(() => {
               window.location.href = 'index.html';
@@ -100,11 +248,11 @@
                       totalRev += o.total;
                       html += `
                           <tr>
-                              <td><strong>\${o.orderId}</strong></td>
-                              <td>\${o.user.replace(/_/g, '.')}</td>
-                              <td>\${new Date(o.date).toLocaleDateString()}</td>
-                              <td>₹\${o.total.toFixed(2)}</td>
-                              <td><span style="background:#e8f6ea; color:#088178; padding:5px 10px; border-radius:4px; font-size:12px;">\${o.status || 'Processing'}</span></td>
+                              <td><strong>${o.orderId}</strong></td>
+                              <td>${o.user.replace(/_/g, '.')}</td>
+                              <td>${new Date(o.date).toLocaleDateString()}</td>
+                              <td>₹${o.total.toFixed(2)}</td>
+                              <td><span class="badge badge-success">${o.status || 'Processing'}</span></td>
                           </tr>
                       `;
                   });
