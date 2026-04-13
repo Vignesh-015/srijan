@@ -2,3 +2,7 @@ node_modules/
 .env
 
 .vercel
+__pycache__/
+*.pyc
+Best_chatbot/backend/data/customer_support_tickets_200k.csv
+Best_chatbot/frontend/node_modules/
