@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static HTML/CSS/JS frontend files efficiently from the same domain
-app.use(express.static(path.join(__dirname, '.')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize Razorpay Instance securely
 const razorpay = new Razorpay({
